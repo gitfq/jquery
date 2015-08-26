@@ -734,7 +734,8 @@ test( "prop('tabindex')", function() {
 	equal( jQuery("#linkWithNoHrefWithNegativeTabIndex").prop("tabindex"), -1, "anchor without href, no tabindex set" );
 });
 
-test( "prop('tabindex', value)", 10, function() {
+test( "prop('tabindex', value)", function() {
+	expect( 10 );
 
 	var clone,
 		element = jQuery("#divWithNoTabIndex");
@@ -1266,7 +1267,7 @@ var testToggleClass = function(valueObj) {
 
 	// Cleanup
 	e.removeClass("testD");
-	QUnit.expectJqData( e[ 0 ], "__className__" );
+	QUnit.expectJqData( this, e[ 0 ], "__className__" );
 };
 
 test( "toggleClass(String|boolean|undefined[, boolean])", function() {
@@ -1452,13 +1453,20 @@ test( "coords returns correct values in IE6/IE7, see #10828", function() {
 	equal( area.attr("coords"), "0,0,0,0", "did not retrieve coords correctly" );
 });
 
-test( "should not throw at $(option).val() (#14686)", 1, function() {
+test( "should not throw at $(option).val() (#14686)", function() {
+	expect( 1 );
+
 	try {
 		jQuery( "<option/>" ).val();
 		ok( true );
 	} catch ( _ ) {
 		ok( false );
 	}
+});
+
+test( "option value not trimmed when setting via parent select", function() {
+	expect( 1 );
+	equal( jQuery( "<select><option> 2</option></select>" ).val( "2" ).val(), "2" );
 });
 
 test( "Insignificant white space returned for $(option).val() (#14858)", function() {
@@ -1472,4 +1480,32 @@ test( "Insignificant white space returned for $(option).val() (#14858)", functio
 
 	val = jQuery( "<option>  test  </option>" ).val();
 	equal( val.length, 4, "insignificant white-space returned for value" );
+});
+
+test( "SVG class manipulation (gh-2199)", function() {
+	expect( 12 );
+
+	function createSVGElement( nodeName ) {
+		return document.createElementNS( "http://www.w3.org/2000/svg", nodeName );
+	}
+
+	jQuery.each([
+		"svg",
+		"rect",
+		"g"
+	], function() {
+		var elem = jQuery( createSVGElement( this ) );
+
+		elem.addClass( "awesome" );
+		ok( elem.hasClass( "awesome" ), "SVG element (" + this + ") has added class" );
+
+		elem.removeClass( "awesome" );
+		ok( !elem.hasClass( "awesome" ), "SVG element (" + this + ") removes the class" );
+
+		elem.toggleClass( "awesome" );
+		ok( elem.hasClass( "awesome" ), "SVG element (" + this + ") toggles the class on" );
+
+		elem.toggleClass( "awesome" );
+		ok( !elem.hasClass( "awesome" ), "SVG element (" + this + ") toggles the class off" );
+	});
 });

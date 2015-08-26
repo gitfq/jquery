@@ -285,7 +285,9 @@ this.loadTests = function() {
 			"unit/ajax.js",
 			"unit/effects.js",
 			"unit/offset.js",
-			"unit/dimensions.js"
+			"unit/dimensions.js",
+			"unit/animation.js",
+			"unit/tween.js"
 		];
 
 		// Ensure load order (to preserve test numbers)
@@ -301,7 +303,9 @@ this.loadTests = function() {
 				/**
 				 * Run in noConflict mode
 				 */
-				jQuery.noConflict();
+				if ( jQuery.noConflict ) {
+					jQuery.noConflict();
+				}
 
 				// Load the TestSwarm listener if swarmURL is in the address.
 				if ( loadSwarm ) {

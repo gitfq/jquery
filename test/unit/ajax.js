@@ -1,12 +1,4 @@
 module( "ajax", {
-	setup: function() {
-		var jsonpCallback = this.jsonpCallback = jQuery.ajaxSettings.jsonpCallback;
-		jQuery.ajaxSettings.jsonpCallback = function() {
-			var callback = jsonpCallback.apply( this, arguments );
-			Globals.register( callback );
-			return callback;
-		};
-	},
 	teardown: function() {
 		jQuery( document ).off( "ajaxStart ajaxStop ajaxSend ajaxComplete ajaxError ajaxSuccess" );
 		moduleTeardown.apply( this, arguments );
@@ -14,7 +6,9 @@ module( "ajax", {
 });
 
 (function() {
-	test("Unit Testing Environment", 2, function () {
+	test("Unit Testing Environment", function () {
+		expect( 2 );
+
 		ok( hasPHP, "Running in an environment with PHP support. The AJAX tests only run if the environment supports PHP!" );
 		ok( !isLocal, "Unit tests are not ran from file:// (especially in Chrome. If you must test from file:// with Chrome, run it with the --allow-file-access-from-files flag!)" );
 	});
@@ -77,11 +71,11 @@ module( "ajax", {
 		},
 		success: true,
 		afterSend: function( request ) {
-			request.complete(function() {
+			request.always(function() {
 				ok( true, "complete" );
-			}).success(function() {
+			}).done(function() {
 				ok( true, "success" );
-			}).error(function() {
+			}).fail(function() {
 				ok( false, "error" );
 			});
 		}
@@ -95,11 +89,11 @@ module( "ajax", {
 		},
 		success: true,
 		complete: function( xhr ) {
-			xhr.complete(function() {
+			xhr.always(function() {
 				ok( true, "complete" );
-			}).success(function() {
+			}).done(function() {
 				ok( true, "success" );
-			}).error(function() {
+			}).fail(function() {
 				ok( false, "error" );
 			});
 		}
@@ -301,7 +295,7 @@ module( "ajax", {
 		}
 	]);
 
-	ajaxTest( "jQuery.ajax() - cross-domain detection", 7, function() {
+	ajaxTest( "jQuery.ajax() - cross-domain detection", 8, function() {
 		function request( url, title, crossDomainOrOptions ) {
 			return jQuery.extend( {
 				dataType: "jsonp",
@@ -321,7 +315,7 @@ module( "ajax", {
 
 		return [
 			request(
-				loc.protocol + "//" + loc.host + ":" + samePort,
+				loc.protocol + "//" + loc.hostname + ":" + samePort,
 				"Test matching ports are not detected as cross-domain",
 				false
 			),
@@ -351,6 +345,10 @@ module( "ajax", {
 				{
 					crossDomain: true
 				}
+			),
+			request(
+				" http://otherdomain.com",
+				"Cross-domain url with leading space is detected as cross-domain"
 			)
 		];
 	});
@@ -438,6 +436,23 @@ module( "ajax", {
 			},
 			success: true
 		};
+	});
+
+	ajaxTest( "#15160 - jQuery.ajax() - request manually aborted in ajaxSend", 3, {
+		setup: function() {
+			jQuery( document ).on( "ajaxSend", function( e, jqXHR ) {
+				jqXHR.abort();
+			});
+
+			jQuery( document ).on( "ajaxError ajaxComplete", function( e, jqXHR ) {
+				equal( jqXHR.statusText, "abort", "jqXHR.statusText equals abort on global ajaxComplete and ajaxError events" );
+			});
+		},
+		url: url("data/name.html"),
+		error: true,
+		complete: function() {
+			ok( true, "complete" );
+		}
 	});
 
 	ajaxTest( "jQuery.ajax() - context modification", 1, {
@@ -721,7 +736,7 @@ module( "ajax", {
 			}
 		]);
 
-		ajaxTest( "jQuery.ajax() - JSONP - Explicit callback param" + label, 9, {
+		ajaxTest( "jQuery.ajax() - JSONP - Explicit callback param" + label, 10, {
 			setup: function() {
 				Globals.register("functionToCleanUp");
 				Globals.register("XXX");
@@ -744,6 +759,11 @@ module( "ajax", {
 				crossDomain: crossDomain,
 				jsonpCallback: "jsonpResults",
 				success: function( data ) {
+					strictEqual(
+						typeof window[ "jsonpResults" ],
+						"function",
+						"should not rewrite original function"
+					);
 					ok( data.data, "JSON results returned (GET, custom callback name)" );
 				}
 			}, {
@@ -1002,9 +1022,6 @@ module( "ajax", {
 			" (no cache)": false
 		},
 		function( label, cache ) {
-			// Support: Opera 12.0
-			// In Opera 12.0, XHR doesn't notify 304 back to the user properly
-			var opera = window.opera && window.opera.version();
 			jQuery.each(
 				{
 					"If-Modified-Since": "if_modified_since.php",
@@ -1024,15 +1041,9 @@ module( "ajax", {
 									ifModified: true,
 									cache: cache,
 									success: function( data, status, jqXHR ) {
-										if ( status === "success" && opera === "12.00" ) {
-											strictEqual( status, "success", "Opera 12.0: Following status is 'success'" );
-											strictEqual( jqXHR.status, 200, "Opera 12.0: XHR status is 200, not 304" );
-											strictEqual( data, "", "Opera 12.0: response body is empty" );
-										} else {
-											strictEqual( status, "notmodified", "Following status is 'notmodified'" );
-											strictEqual( jqXHR.status, 304, "XHR status is 304" );
-											equal( data, null, "no response body is given" );
-										}
+										strictEqual( status, "notmodified", "Following status is 'notmodified'" );
+										strictEqual( jqXHR.status, 304, "XHR status is 304" );
+										equal( data, null, "no response body is given" );
 									},
 									complete: function() {
 										start();
@@ -1279,7 +1290,9 @@ module( "ajax", {
 		}
 	});
 
-	test( "#7531 - jQuery.ajax() - Location object as url", 1, function () {
+	test( "#7531 - jQuery.ajax() - Location object as url", function () {
+		expect( 1 );
+
 		var xhr,
 			success = false;
 		try {
@@ -1344,16 +1357,29 @@ module( "ajax", {
 	]);
 
 	jQuery.each( [ " - Same Domain", " - Cross Domain" ], function( crossDomain, label ) {
-		ajaxTest( "#8205 - jQuery.ajax() - JSONP - re-use callbacks name" + label, 2, {
+		ajaxTest( "#8205 - jQuery.ajax() - JSONP - re-use callbacks name" + label, 4, {
 			url: "data/jsonp.php",
 			dataType: "jsonp",
 			crossDomain: crossDomain,
 			beforeSend: function( jqXHR, s ) {
 				s.callback = s.jsonpCallback;
+
+				ok( this.callback in window, "JSONP callback name is in the window" );
 			},
 			success: function() {
 				var previous = this;
-				strictEqual( previous.jsonpCallback, undefined, "jsonpCallback option is set back to default in callbacks" );
+
+				strictEqual(
+					previous.jsonpCallback,
+					undefined,
+					"jsonpCallback option is set back to default in callbacks"
+				);
+
+				ok(
+					!( this.callback in window ),
+					"JSONP callback name was removed from the window"
+				);
+
 				jQuery.ajax({
 					url: "data/jsonp.php",
 					dataType: "jsonp",
@@ -1367,7 +1393,9 @@ module( "ajax", {
 		});
 	});
 
-	test( "#9887 - jQuery.ajax() - Context with circular references (#9887)", 2, function () {
+	test( "#9887 - jQuery.ajax() - Context with circular references (#9887)", function () {
+		expect( 2 );
+
 		var success = false,
 			context = {};
 		context.field = context;
@@ -1428,6 +1456,15 @@ module( "ajax", {
 	});
 
 	asyncTest( "#11743 - jQuery.ajax() - script, throws exception", 1, function() {
+		// Support: Android 2.3 only
+		// Android 2.3 doesn't fire the window.onerror handler, just accept the reality there.
+		if ( /android 2\.3/i.test( navigator.userAgent ) ) {
+			ok( true, "Test skipped, Android 2.3 doesn't fire window.onerror for " +
+				"errors in dynamically included scripts" );
+			start();
+			return;
+		}
+
 		var onerror = window.onerror;
 		window.onerror = function() {
 			ok( true, "Exception thrown" );
@@ -1668,7 +1705,9 @@ module( "ajax", {
 
 //----------- jQuery.domManip()
 
-	test( "#11264 - jQuery.domManip() - no side effect because of ajaxSetup or global events", 1, function() {
+	test( "#11264 - jQuery.domManip() - no side effect because of ajaxSetup or global events", function() {
+		expect( 1 );
+
 		jQuery.ajaxSetup({
 			type: "POST"
 		});
@@ -1677,9 +1716,20 @@ module( "ajax", {
 			ok( false, "Global event triggered" );
 		});
 
-		jQuery("#qunit-fixture").append("<script src='data/evalScript.php'></script>");
+		jQuery("#qunit-fixture").append("<script src='data/ajax/evalScript.php'></script>");
 
 		jQuery( document ).off("ajaxStart ajaxStop");
+	});
+
+	asyncTest( "jQuery#load() - always use GET method even if it overrided through ajaxSetup (#11264)", 1, function() {
+		jQuery.ajaxSetup({
+			type: "POST"
+		});
+
+		jQuery( "#qunit-fixture" ).load( "data/ajax/method.php", function( method ) {
+			equal( method, "GET" );
+			start();
+		});
 	});
 
 	asyncTest( "#11402 - jQuery.domManip() - script in comments are properly evaluated", 2, function() {
@@ -2022,9 +2072,31 @@ module( "ajax", {
 		});
 	});
 
+	asyncTest( "jQuery[get|post]( options ) - simple with xml", 2, function() {
+		jQuery.when.apply( jQuery,
+			jQuery.map( [ "get", "post" ] , function( method ) {
+				return jQuery[ method ]({
+					url: url( "data/name.php" ),
+					data: {
+						"xml": "5-2"
+					},
+					success: function( xml ) {
+						jQuery( "math", xml ).each(function() {
+							strictEqual( jQuery( "result", this ).text(), "3", "Check for XML" );
+						});
+					}
+				});
+			})
+		).always(function() {
+			start();
+		});
+	});
+
 //----------- jQuery.active
 
-	test( "jQuery.active", 1, function() {
+	test( "jQuery.active", function() {
+		expect( 1 );
+
 		ok( jQuery.active === 0, "ajax active counter should be zero: " + jQuery.active );
 	});
 

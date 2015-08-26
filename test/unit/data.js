@@ -126,7 +126,9 @@ function dataTests( elem ) {
 	equal( jQuery._data(elem, "foo"), "foo2", "(sanity check) jQuery.removeData for user data does not remove internal data" );
 }
 
-test("jQuery.data(div)", 25, function() {
+test("jQuery.data(div)", function() {
+	expect( 25 );
+
 	var div = document.createElement("div");
 
 	dataTests( div );
@@ -134,36 +136,42 @@ test("jQuery.data(div)", 25, function() {
 	// We stored one key in the private data
 	// assert that nothing else was put in there, and that that
 	// one stayed there.
-	QUnit.expectJqData( div, "foo" );
+	QUnit.expectJqData( this, div, "foo" );
 });
 
-test("jQuery.data({})", 25, function() {
+test("jQuery.data({})", function() {
+	expect( 25 );
+
 	dataTests( {} );
 });
 
-test("jQuery.data(window)", 25, function() {
+test("jQuery.data(window)", function() {
+	expect( 25 );
+
 	// remove bound handlers from window object to stop potential false positives caused by fix for #5280 in
 	// transports/xhr.js
-	jQuery( window ).off( "unload" );
+	jQuery( window ).off( "unload" );
 
 	dataTests( window );
 });
 
-test("jQuery.data(document)", 25, function() {
+test("jQuery.data(document)", function() {
+	expect( 25 );
+
 	dataTests( document );
 
-	QUnit.expectJqData( document, "foo" );
+	QUnit.expectJqData( this, document, "foo" );
 });
 
-test("jQuery.data(<embed>)", 25, function() {
+test("jQuery.data(<embed>)", function() {
+	expect( 25 );
+
 	dataTests( document.createElement("embed") );
 });
 
-test("jQuery.data(<applet>)", 25, function() {
-	dataTests( document.createElement("applet") );
-});
+test("jQuery.data(object/flash)", function() {
+	expect( 25 );
 
-test("jQuery.data(object/flash)", 25, function() {
 	var flash = document.createElement("object");
 	flash.setAttribute( "classid", "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" );
 
@@ -171,7 +179,9 @@ test("jQuery.data(object/flash)", 25, function() {
 });
 
 // attempting to access the data of an undefined jQuery element should be undefined
-test("jQuery().data() === undefined (#14101)", 2, function() {
+test("jQuery().data() === undefined (#14101)", function() {
+	expect( 2 );
+
 	strictEqual(jQuery().data(), undefined);
 	strictEqual(jQuery().data("key"), undefined);
 });
@@ -263,14 +273,14 @@ test(".data(object) does not retain references. #13815", function() {
 });
 
 test("data-* attributes", function() {
-	expect( 43 );
+	expect( 46 );
 
 	var prop, i, l, metadata, elem,
 		obj, obj2, check, num, num2,
 		parseJSON = jQuery.parseJSON,
 		div = jQuery("<div>"),
-		child = jQuery("<div data-myobj='old data' data-ignored=\"DOM\" data-other='test'></div>"),
-		dummy = jQuery("<div data-myobj='old data' data-ignored=\"DOM\" data-other='test'></div>");
+		child = jQuery("<div data-myobj='old data' data-ignored=\"DOM\" data-other='test' data-foo-42='boosh'></div>"),
+		dummy = jQuery("<div data-myobj='old data' data-ignored=\"DOM\" data-other='test' data-foo-42='boosh'></div>");
 
 	equal( div.data("attr"), undefined, "Check for non-existing data-attr attribute" );
 
@@ -287,6 +297,7 @@ test("data-* attributes", function() {
 
 	child.appendTo("#qunit-fixture");
 	equal( child.data("myobj"), "old data", "Value accessed from data-* attribute");
+	equal( child.data("foo-42"), "boosh", "camelCasing does not affect numbers (#1751)" );
 
 	child.data("myobj", "replaced");
 	equal( child.data("myobj"), "replaced", "Original data overwritten");
@@ -296,7 +307,7 @@ test("data-* attributes", function() {
 
 	obj = child.data();
 	obj2 = dummy.data();
-	check = [ "myobj", "ignored", "other" ];
+	check = [ "myobj", "ignored", "other", "foo-42" ];
 	num = 0;
 	num2 = 0;
 
@@ -590,6 +601,44 @@ test(".data should not miss attr() set data-* with hyphenated property names", f
 	deepEqual( b.data("long-param"), { a: 2 }, "data with property long-param was found, 2" );
 });
 
+test(".data always sets data with the camelCased key (gh-2257)", function() {
+	expect( 18 );
+
+	var div = jQuery("<div>").appendTo("#qunit-fixture"),
+		datas = {
+			"non-empty": "a string",
+			"empty-string": "",
+			"one-value": 1,
+			"zero-value": 0,
+			"an-array": [],
+			"an-object": {},
+			"bool-true": true,
+			"bool-false": false,
+
+			// JSHint enforces double quotes,
+			// but JSON strings need double quotes to parse
+			// so we need escaped double quotes here
+			"some-json": "{ \"foo\": \"bar\" }"
+		};
+
+	jQuery.each( datas, function( key, val ) {
+		div.data( key, val );
+		var allData = div.data();
+		equal( allData[ key ], undefined, ".data does not store with hyphenated keys" );
+		equal( allData[ jQuery.camelCase( key ) ], val, ".data stores the camelCased key" );
+	});
+});
+
+test( ".data should not strip more than one hyphen when camelCasing (gh-2070)", function() {
+	expect( 3 );
+	var div = jQuery( "<div data-nested-single='single' data-nested--double='double' data-nested---triple='triple'></div>" ).appendTo( "#qunit-fixture" ),
+		allData = div.data();
+
+	equal( allData.nestedSingle, "single", "Key is correctly camelCased" );
+	equal( allData[ "nested-Double" ], "double", "Key with double hyphens is correctly camelCased" );
+	equal( allData[ "nested--Triple" ], "triple", "Key with triple hyphens is correctly camelCased" );
+});
+
 test(".data supports interoperable hyphenated/camelCase get/set of properties with arbitrary non-null|NaN|undefined values", function() {
 
 	var div = jQuery("<div/>", { id: "hyphened" }).appendTo("#qunit-fixture"),
@@ -682,7 +731,7 @@ test(".data supports interoperable removal of properties SET TWICE #13850", func
 	});
 });
 
-test( ".removeData supports removal of hyphenated properties via array (#12786)", function() {
+test( ".removeData supports removal of hyphenated properties via array (#12786, gh-2257)", function() {
 	expect( 4 );
 
 	var div, plain, compare;
@@ -690,11 +739,10 @@ test( ".removeData supports removal of hyphenated properties via array (#12786)"
 	div = jQuery("<div>").appendTo("#qunit-fixture");
 	plain = jQuery({});
 
-	// When data is batch assigned (via plain object), the properties
-	// are not camel cased as they are with (property, value) calls
+	// Properties should always be camelCased
 	compare = {
 		// From batch assignment .data({ "a-a": 1 })
-		"a-a": 1,
+		"aA": 1,
 		// From property, value assignment .data( "b-b", 1 )
 		"bB": 1
 	};
@@ -709,7 +757,6 @@ test( ".removeData supports removal of hyphenated properties via array (#12786)"
 	div.removeData([ "a-a", "b-b" ]);
 	plain.removeData([ "a-a", "b-b" ]);
 
-	// NOTE: Timo's proposal for "propEqual" (or similar) would be nice here
 	deepEqual( div.data(), {}, "Data is empty. (div)" );
 	deepEqual( plain.data(), {}, "Data is empty. (plain)" );
 });
@@ -766,22 +813,23 @@ test(".data doesn't throw when calling selection is empty. #13551", function() {
 	}
 });
 
-test("jQuery.acceptData", 11, function() {
-	var flash, applet;
+test("jQuery.acceptData", function() {
+	expect( 10 );
+
+	var flash, pdf;
 
 	ok( jQuery.acceptData( document ), "document" );
 	ok( jQuery.acceptData( document.documentElement ), "documentElement" );
 	ok( jQuery.acceptData( {} ), "object" );
 	ok( jQuery.acceptData( document.createElement( "embed" ) ), "embed" );
-	ok( jQuery.acceptData( document.createElement( "applet" ) ), "applet" );
 
 	flash = document.createElement( "object" );
 	flash.setAttribute( "classid", "clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" );
 	ok( jQuery.acceptData( flash ), "flash" );
 
-	applet = document.createElement( "object" );
-	applet.setAttribute( "classid", "clsid:8AD9C840-044E-11D1-B3E9-00805F499D93" );
-	ok( jQuery.acceptData( applet ), "applet" );
+	pdf = document.createElement( "object" );
+	pdf.setAttribute( "classid", "clsid:CA8A9780-280D-11CF-A24D-444553540000" );
+	ok( jQuery.acceptData( pdf ), "pdf" );
 
 	ok( !jQuery.acceptData( document.createComment( "" ) ), "comment" );
 	ok( !jQuery.acceptData( document.createTextNode( "" ) ), "text" );
@@ -792,7 +840,9 @@ test("jQuery.acceptData", 11, function() {
 		"form with aliased DOM properties" );
 });
 
-test("Check proper data removal of non-element descendants nodes (#8335)", 1, function() {
+test("Check proper data removal of non-element descendants nodes (#8335)", function() {
+	expect( 1 );
+
 	var div = jQuery("<div>text</div>"),
 		text = div.contents();
 
@@ -803,7 +853,24 @@ test("Check proper data removal of non-element descendants nodes (#8335)", 1, fu
 });
 
 testIframeWithCallback( "enumerate data attrs on body (#14894)", "data/dataAttrs.html", function( result ) {
-	expect(1);
+	expect( 1 );
 
-	equal(result, "ok", "enumeration of data- attrs on body" );
+	equal( result, "ok", "enumeration of data- attrs on body" );
+});
+
+test( "Check that the expando is removed when there's no more data", function() {
+	expect( 1 );
+
+	var key,
+		div = jQuery( "<div/>" );
+	div.data( "some", "data" );
+	equal( div.data( "some" ), "data", "Data is added" );
+	div.removeData( "some" );
+
+	// Make sure the expando is gone
+	for ( key in div[ 0 ] ) {
+		if ( /^jQuery/.test( key ) ) {
+			ok( false, "Expando was not removed when there was no more data" );
+		}
+	}
 });

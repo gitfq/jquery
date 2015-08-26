@@ -210,7 +210,7 @@ Chris Antaki <ChrisAntaki@gmail.com>
 Marian Sollmann <marian.sollmann@cargomedia.ch>
 njhamann <njhamann@gmail.com>
 Ilya Kantor <iliakan@gmail.com>
-hongymagic <d.hong@me.com>
+David Hong <d.hong@me.com>
 John Paul <john@johnkpaul.com>
 Jakob Stoeck <jakob@pokermania.de>
 Christopher Jones <chris@cjqed.com>
@@ -224,3 +224,38 @@ John Hoven <hovenj@gmail.com>
 Philip Jägenstedt <philip@foolip.org>
 Christian Kosmowski <ksmwsk@gmail.com>
 Liang Peng <poppinlp@gmail.com>
+TJ VanToll <tj.vantoll@gmail.com>
+Senya Pugach <upisfree@outlook.com>
+Aurelio De Rosa <aurelioderosa@gmail.com>
+Nazar Mokrynskyi <nazar@mokrynskyi.com>
+Amit Merchant <bullredeyes@gmail.com>
+Jason Bedard <jason+github@jbedard.ca>
+Arthur Verschaeve <contact@arthurverschaeve.be>
+Dan Hart <danhart@notonthehighstreet.com>
+Bin Xin <rhyzix@gmail.com>
+David Corbacho <davidcorbacho@gmail.com>
+Veaceslav Grimalschi <grimalschi@yandex.ru>
+Daniel Husar <dano.husar@gmail.com>
+Frederic Hemberger <mail@frederic-hemberger.de>
+Ben Toews <mastahyeti@gmail.com>
+Aditya Raghavan <araghavan3@gmail.com>
+Victor Homyakov <vkhomyackov@gmail.com>
+Shivaji Varma <contact@shivajivarma.com>
+Nicolas HENRY <icewil@gmail.com>
+Anne-Gaelle Colom <coloma@westminster.ac.uk>
+George Mauer <gmauer@gmail.com>
+Leonardo Braga <leonardo.braga@gmail.com>
+Stephen Edgar <stephen@netweb.com.au>
+Thomas Tortorini <thomastortorini@gmail.com>
+Winston Howes <winstonhowes@gmail.com>
+Jon Hester <jon.d.hester@gmail.com>
+Alexander O'Mara <me@alexomara.com>
+Bastian Buchholz <buchholz.bastian@googlemail.com>
+Arthur Stolyar <nekr.fabula@gmail.com>
+Calvin Metcalf <calvin.metcalf@gmail.com>
+Mu Haibao <mhbseal@163.com>
+Richard McDaniel <rm0026@uah.edu>
+Chris Rebert <github@rebertia.com>
+Gabriel Schulhof <gabriel.schulhof@intel.com>
+Gilad Peleg <giladp007@gmail.com>
+Martin Naumann <martin@geekonaut.de>

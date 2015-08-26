@@ -4,12 +4,16 @@ module.exports = function( grunt ) {
 	function readOptionalJSON( filepath ) {
 		var data = {};
 		try {
-			data = grunt.file.readJSON( filepath );
+			data = JSON.parse( stripJSONComments(
+				fs.readFileSync( filepath, { encoding: "utf8" } )
+			) );
 		} catch ( e ) {}
 		return data;
 	}
 
-	var gzip = require( "gzip-js" ),
+	var fs = require( "fs" ),
+		stripJSONComments = require( "strip-json-comments" ),
+		gzip = require( "gzip-js" ),
 		srcHintOptions = readOptionalJSON( "src/.jshintrc" );
 
 	// The concatenated file won't pass onevar
@@ -28,6 +32,18 @@ module.exports = function( grunt ) {
 					}
 				},
 				cache: "build/.sizecache.json"
+			}
+		},
+		babel: {
+			options: {
+				sourceMap: "inline",
+				retainLines: true
+			},
+			nodeSmokeTests: {
+				files: {
+					"test/node_smoke_tests/lib/ensure_iterability.js":
+						"test/node_smoke_tests/lib/ensure_iterability_es6.js"
+				}
 			}
 		},
 		build: {
@@ -55,9 +71,11 @@ module.exports = function( grunt ) {
 					"sizzle/dist": "sizzle/dist",
 					"sizzle/LICENSE.txt": "sizzle/LICENSE.txt",
 
+					"npo/npo.js": "native-promise-only/npo.js",
+
 					"qunit/qunit.js": "qunitjs/qunit/qunit.js",
 					"qunit/qunit.css": "qunitjs/qunit/qunit.css",
-					"qunit/MIT-LICENSE.txt": "qunitjs/MIT-LICENSE.txt",
+					"qunit/LICENSE.txt": "qunitjs/LICENSE.txt",
 
 					"requirejs/require.js": "requirejs/require.js",
 
@@ -69,10 +87,6 @@ module.exports = function( grunt ) {
 		jsonlint: {
 			pkg: {
 				src: [ "package.json" ]
-			},
-
-			bower: {
-				src: [ "bower.json" ]
 			}
 		},
 		jshint: {
@@ -93,14 +107,15 @@ module.exports = function( grunt ) {
 			src: "src/**/*.js",
 			gruntfile: "Gruntfile.js",
 
-			// Right now, check only test helpers
-			test: [ "test/data/testrunner.js" ],
+			// Check parts of tests that pass
+			test: [ "test/data/testrunner.js", "test/unit/animation.js", "test/unit/tween.js" ],
 			release: [ "build/*.js", "!build/release-notes.js" ],
 			tasks: "build/tasks/*.js"
 		},
 		testswarm: {
 			tests: [
 				"ajax",
+				"animation",
 				"attributes",
 				"callbacks",
 				"core",
@@ -116,12 +131,13 @@ module.exports = function( grunt ) {
 				"selector",
 				"serialize",
 				"support",
-				"traversing"
+				"traversing",
+				"tween"
 			]
 		},
 		watch: {
 			files: [ "<%= jshint.all.src %>" ],
-			tasks: "dev"
+			tasks: [ "dev" ]
 		},
 		uglify: {
 			all: {
@@ -137,8 +153,7 @@ module.exports = function( grunt ) {
 						"ascii_only": true
 					},
 					banner: "/*! jQuery v<%= pkg.version %> | " +
-						"(c) 2005, <%= grunt.template.today('yyyy') %> jQuery Foundation, Inc. | " +
-						"jquery.org/license */",
+						"(c) jQuery Foundation | jquery.org/license */",
 					compress: {
 						"hoist_funs": false,
 						loops: false,
@@ -155,11 +170,14 @@ module.exports = function( grunt ) {
 	// Integrate jQuery specific tasks
 	grunt.loadTasks( "build/tasks" );
 
-	grunt.registerTask( "lint", [ "jshint", "jscs" ] );
+	grunt.registerTask( "lint", [ "jsonlint", "jshint", "jscs" ] );
+
+	grunt.registerTask( "test_fast", [ "node_smoke_tests" ] );
+
+	grunt.registerTask( "test", [ "test_fast", "promises_aplus_tests" ] );
 
 	// Short list as a high frequency watch task
-	grunt.registerTask( "dev", [ "build:*:*", "lint" ] );
+	grunt.registerTask( "dev", [ "build:*:*", "lint", "uglify", "remove_map_comment", "dist:*" ] );
 
-	// Default grunt
-	grunt.registerTask( "default", [ "jsonlint", "dev", "uglify", "dist:*", "compare_size" ] );
+	grunt.registerTask( "default", [ "dev", "test_fast", "compare_size" ] );
 };

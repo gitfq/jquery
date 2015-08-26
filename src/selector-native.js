@@ -1,6 +1,8 @@
 define([
-	"./core"
-], function( jQuery ) {
+	"./core",
+	"./var/document",
+	"./var/documentElement"
+], function( jQuery, document, documentElement ) {
 
 /*
  * Optional (non-Sizzle) selector module for custom builds.
@@ -28,12 +30,11 @@ define([
  */
 
 var hasDuplicate,
-	docElem = window.document.documentElement,
-	matches = docElem.matches ||
-		docElem.webkitMatchesSelector ||
-		docElem.mozMatchesSelector ||
-		docElem.oMatchesSelector ||
-		docElem.msMatchesSelector,
+	matches = documentElement.matches ||
+		documentElement.webkitMatchesSelector ||
+		documentElement.mozMatchesSelector ||
+		documentElement.oMatchesSelector ||
+		documentElement.msMatchesSelector,
 	sortOrder = function( a, b ) {
 		// Flag for duplicate removal
 		if ( a === b ) {
@@ -66,6 +67,28 @@ var hasDuplicate,
 
 		// Not directly comparable, sort on existence of method
 		return a.compareDocumentPosition ? -1 : 1;
+	},
+	uniqueSort = function( results ) {
+		var elem,
+			duplicates = [],
+			i = 0,
+			j = 0;
+
+		hasDuplicate = false;
+		results.sort( sortOrder );
+
+		if ( hasDuplicate ) {
+			while ( (elem = results[i++]) ) {
+				if ( elem === results[ i ] ) {
+					j = duplicates.push( i );
+				}
+			}
+			while ( j-- ) {
+				results.splice( duplicates[ j ], 1 );
+			}
+		}
+
+		return results;
 	};
 
 jQuery.extend({
@@ -98,28 +121,8 @@ jQuery.extend({
 
 		return results;
 	},
-	unique: function( results ) {
-		var elem,
-			duplicates = [],
-			i = 0,
-			j = 0;
-
-		hasDuplicate = false;
-		results.sort( sortOrder );
-
-		if ( hasDuplicate ) {
-			while ( (elem = results[i++]) ) {
-				if ( elem === results[ i ] ) {
-					j = duplicates.push( i );
-				}
-			}
-			while ( j-- ) {
-				results.splice( duplicates[ j ], 1 );
-			}
-		}
-
-		return results;
-	},
+	uniqueSort: uniqueSort,
+	unique: uniqueSort,
 	text: function( elem ) {
 		var node,
 			ret = "",
@@ -153,7 +156,8 @@ jQuery.extend({
 	expr: {
 		attrHandle: {},
 		match: {
-			bool: /^(?:checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped)$/i,
+			bool: new RegExp( "^(?:checked|selected|async|autofocus|autoplay|controls|defer" +
+				"|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped)$", "i" ),
 			needsContext: /^[\x20\t\r\n\f]*[>+~]/
 		}
 	}
